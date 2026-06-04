@@ -1,32 +1,92 @@
 {
-	"name": "Petclinic",
-	"dockerFile": "Dockerfile",
-	"runArgs": [
-		"--cap-add=SYS_PTRACE",
-		"--security-opt",
-		"seccomp=unconfined",
-		"--mount",
-		"type=bind,source=${env:HOME}/.m2,target=/home/vscode/.m2",
-		"--mount",
-		"type=bind,source=${env:HOME}/.gradle,target=/home/vscode/.gradle",
-		"--env",
-		"GRADLE_USER_HOME=/home/vscode/.gradle"
-	],
-	"initializeCommand": "mkdir -p ${env:HOME}/.m2 ${env:HOME}/.gradle",
-	"postCreateCommand": "sudo chown vscode:vscode /home/vscode/.m2 /home/vscode/.gradle",
-	"remoteUser": "vscode",
-	"features": {
-		"docker-in-docker": "latest"
-	},
-	"extensions": [
-		"vscjava.vscode-java-pack",
-		"redhat.vscode-xml",
-		"vmware.vscode-boot-dev-pack",
-		"mhutchie.git-graph"
-	],
-	"forwardPorts": [8080],
-	"settings": {
-		"java.import.gradle.enabled": false,
-		"java.server.launchMode": "Standard"
-	}
+  "name": "spring-petclinic-cleanstart",
+  "image": "mcr.microsoft.com/devcontainers/java:1-21-bullseye",
+ 
+  // ─── Features ────────────────────────────────────────────────────────────
+  // Each feature is a self-contained install script that GitHub Codespaces
+  // runs automatically on container build — no manual apt-get needed.
+  "features": {
+    // Docker-in-Docker: gives a full Docker daemon inside the Codespace.
+    // This is what was MISSING in your current setup — this feature handles
+    // all the iptables / CAP_NET_ADMIN issues automatically.
+    "ghcr.io/devcontainers/features/docker-in-docker:2": {
+      "version": "latest",
+      "enableNonRootDocker": "true",
+      "moby": "true"
+    },
+ 
+    // Java 17 — LTS, required by Spring PetClinic
+    "ghcr.io/devcontainers/features/java:1": {
+      "version": "17",
+      "jdkDistro": "ms",
+      "installMaven": "true",
+      "installGradle": "false"
+    },
+ 
+    // Trivy — open-source SCA/vulnerability scanner (core assignment task)
+    "ghcr.io/devcontainers-contrib/features/trivy:1": {},
+ 
+    // GitHub CLI — useful for pushing reports, creating releases
+    "ghcr.io/devcontainers/features/github-cli:1": {
+      "version": "latest"
+    }
+  },
+ 
+  // ─── Port Forwarding ──────────────────────────────────────────────────────
+  // Spring PetClinic runs on 8080. Codespaces will auto-open this in browser.
+  "forwardPorts": [8080],
+  "portsAttributes": {
+    "8080": {
+      "label": "Spring PetClinic App",
+      "onAutoForward": "notify"
+    }
+  },
+ 
+  // ─── VS Code Extensions ───────────────────────────────────────────────────
+  // Installed automatically when Codespace starts.
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        // Java development
+        "vscjava.vscode-java-pack",
+        "vmware.vscode-boot-dev-pack",
+        // Docker & containers
+        "ms-azuretools.vscode-docker",
+        // XML (Spring config files)
+        "redhat.vscode-xml",
+        // YAML (docker-compose, GitHub Actions)
+        "redhat.vscode-yaml",
+        // Git graph — visualize commit history
+        "mhutchie.git-graph",
+        // Markdown preview — for writing your PoC report
+        "yzhang.markdown-all-in-one",
+        // EditorConfig — repo has .editorconfig
+        "EditorConfig.EditorConfig"
+      ],
+      "settings": {
+        "java.import.gradle.enabled": false,
+        "java.server.launchMode": "Standard",
+        "java.configuration.runtimes": [
+          {
+            "name": "JavaSE-17",
+            "default": true
+          }
+        ],
+        "terminal.integrated.defaultProfile.linux": "bash",
+        "editor.formatOnSave": true
+      }
+    }
+  },
+ 
+  // ─── Post-Create Command ──────────────────────────────────────────────────
+  // Runs ONCE after the container is built.
+  // - Pre-downloads Maven dependencies so first build is fast
+  // - Ensures mvnw is executable
+  // - Prints tool versions so you can confirm everything is ready
+  "postCreateCommand": "chmod +x mvnw && ./mvnw dependency:go-offline -B -q && echo '✅ Maven dependencies cached' && java -version && docker --version && trivy --version && echo '✅ All tools ready'",
+ 
+  // ─── Remote User ──────────────────────────────────────────────────────────
+  // Run as non-root vscode user — security best practice,
+  // also mirrors how your Dockerfile runs the app as non-root.
+  "remoteUser": "vscode"
 }
