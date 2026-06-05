@@ -1,0 +1,23 @@
+# Version control
+.git
+.gitignore
+.gitattributes
+
+# Dev environment
+.devcontainer
+.gitpod.yml
+.vscode
+
+# CI/CD
+.github
+
+# Build output — builder stage generates its own
+target/
+
+# Documentation — not needed in image
+*.md
+LICENSE.txt
+
+# Local overrides
+*.old
+*.log
